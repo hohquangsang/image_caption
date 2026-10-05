@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VisioCaption AI – Sinh Caption Thông Minh</title>
+  <meta name="description" content="Hệ thống AI mạnh mẽ: Tải ảnh lên để sinh 5 câu mô tả tự động, hoặc nhập văn bản để tạo ảnh từ ngôn ngữ tự nhiên."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+
+  <!-- ═══════════════════ NAVBAR ═══════════════════ -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <span class="logo-icon">🤖</span>
+        <span class="logo-text">VisioCaption<span class="logo-accent">AI</span></span>
+      </div>
+      <div class="nav-links">
+        <a href="#demo">Thử Ngay</a>
+        <a href="#how-it-works">Cách Hoạt Động</a>
+        <a href="#features">Tính Năng</a>
+        <a href="#guide">Hướng Dẫn</a>
+      </div>
+      <button class="nav-cta" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">
+        Bắt Đầu
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════ HERO SECTION ═══════════════════ -->
+  <section class="hero" id="home">
+    <div class="hero-bg-glow"></div>
+    <div class="hero-particles" id="particles"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Được hỗ trợ bởi InceptionV3 + LSTM
+      </div>
+      <h1 class="hero-title">
+        Trí Tuệ Nhân Tạo
+        <span class="gradient-text">Hiểu Ngôn Ngữ</span>
+        Của Hình Ảnh
+      </h1>
+      <p class="hero-desc">
+        VisioCaption AI tự động sinh ra 5 câu mô tả chính xác từ bất kỳ hình ảnh nào
+        bằng kiến trúc deep learning tiên tiến. Khám phá thế giới AI theo cách chưa từng có.
+      </p>
+      <div class="hero-actions">
+        <button class="btn-primary pulse-btn" onclick="document.getElementById('tab-img2cap').click(); document.getElementById('demo').scrollIntoView({behavior:'smooth'})">
+          <span>🖼️</span> Tải Ảnh Lên
+        </button>
+        <button class="btn-secondary" onclick="document.getElementById('how-it-works').scrollIntoView({behavior:'smooth'})">
+          <span>▶️</span> Xem Demo
+        </button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-num">40K+</span>
+          <span class="stat-label">Ảnh Huấn Luyện</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-num">5</span>
+          <span class="stat-label">Captions / Ảnh</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-num">BLEU</span>
+          <span class="stat-label">0.45 Score</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-card floating">
+        <img src="/static/images/hero.png" alt="AI Vision" class="hero-img"/>
+        <div class="hero-card-overlay">
+          <div class="ai-label">🧠 AI Processing...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ DEMO SECTION ═══════════════════ -->
+  <section class="demo-section" id="demo">
+    <div class="section-header">
+      <span class="section-tag">✨ Thử Nghiệm</span>
+      <h2>Trải Nghiệm Ngay</h2>
+      <p>Hai luồng hoạt động mạnh mẽ của hệ thống AI</p>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-container">
+      <button class="tab-btn active" id="tab-img2cap" onclick="switchTab('img2cap')">
+        <span class="tab-icon">🖼️→💬</span>
+        <span>Ảnh → Caption</span>
+      </button>
+      <button class="tab-btn" id="tab-cap2img" onclick="switchTab('cap2img')">
+        <span class="tab-icon">💬→🖼️</span>
+        <span>Caption → Ảnh</span>
+      </button>
+    </div>
+
+    <!-- ─── Tab 1: Image to Caption ─── -->
+    <div class="tab-content active" id="content-img2cap">
+      <div class="demo-card">
+        <div class="demo-left">
+          <div class="upload-zone" id="uploadZone"
+               ondrop="handleDrop(event)" ondragover="handleDragOver(event)"
+               ondragleave="handleDragLeave(event)" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">📤</div>
+            <div class="upload-text">
+              <strong>Nhấn để chọn ảnh</strong>
+              <span>hoặc kéo thả vào đây</span>
+            </div>
+            <div class="upload-hint">Hỗ trợ: JPG, PNG, WEBP – Tối đa 10MB</div>
+            <input type="file" id="fileInput" accept="image/*" style="display:none"
+                   onchange="handleFileSelect(event)"/>
+          </div>
+
+          <div class="preview-container" id="previewContainer" style="display:none">
+            <img id="imagePreview" alt="Preview" class="image-preview"/>
+            <div class="preview-actions">
+              <button class="btn-change" onclick="resetUpload()">🔄 Đổi ảnh</button>
+              <button class="btn-generate" id="generateBtn" onclick="generateCaptions()">
+                <span id="generateBtnText">✨ Sinh Caption</span>
+                <div class="spinner" id="spinner" style="display:none"></div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-right">
+          <div class="results-panel">
+            <div class="results-header">
+              <span class="results-icon">💬</span>
+              <span>Captions được sinh ra</span>
+              <span class="results-count" id="resultsCount">0/5</span>
+            </div>
+
+            <div class="results-empty" id="resultsEmpty">
+              <div class="empty-icon">🎨</div>
+              <p>Tải ảnh lên và nhấn <strong>"Sinh Caption"</strong><br/>để xem kết quả</p>
+            </div>
+
+            <div class="captions-list" id="captionsList" style="display:none">
+              <!-- Captions sẽ được inject vào đây -->
+            </div>
+
+            <div class="loading-state" id="loadingState" style="display:none">
+              <div class="loading-wave">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+              </div>
+              <p>AI đang phân tích ảnh...</p>
+              <span class="loading-sub">Đang trích xuất đặc trưng và sinh văn bản</span>
+            </div>
+
+            <div class="error-state" id="errorState" style="display:none">
+              <div class="error-icon">⚠️</div>
+              <p id="errorMsg">Đã xảy ra lỗi</p>
+              <button class="btn-retry" onclick="generateCaptions()">Thử lại</button>
+            </div>
+          </div>
+
+          <!-- Copy all button -->
+          <button class="btn-copy-all" id="copyAllBtn" style="display:none" onclick="copyAllCaptions()">
+            📋 Sao chép tất cả captions
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Tab 2: Caption to Image (Placeholder) ─── -->
+    <div class="tab-content" id="content-cap2img">
+      <div class="demo-card cap2img-card">
+        <div class="comingsoon-overlay">
+          <div class="comingsoon-content">
+            <div class="rocket-animation">🚀</div>
+            <h3>Đang Phát Triển</h3>
+            <p>Tính năng <strong>Caption → Ảnh</strong> đang được tích hợp model sinh ảnh tiên tiến.</p>
+            <div class="progress-container">
+              <div class="progress-label">
+                <span>Tiến độ hoàn thành</span>
+                <span>65%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width:65%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="placeholder-ui blurred">
+          <div class="placeholder-left">
+            <div class="fake-textarea">
+              <label>Mô tả ảnh bạn muốn tạo...</label>
+              <div class="fake-input">A golden retriever playing in a sunny park with children...</div>
+            </div>
+            <div class="fake-params">
+              <span class="param-chip">📐 Style: Realistic</span>
+              <span class="param-chip">🎨 Quality: HD</span>
+              <span class="param-chip">📏 Size: 512×512</span>
+            </div>
+            <div class="fake-btn">🎨 Tạo Hình Ảnh</div>
+          </div>
+          <div class="placeholder-right">
+            <div class="fake-image-grid">
+              <div class="fake-img"></div>
+              <div class="fake-img"></div>
+              <div class="fake-img"></div>
+              <div class="fake-img"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ HOW IT WORKS ═══════════════════ -->
+  <section class="how-section" id="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">⚙️ Công Nghệ</span>
+        <h2>Cách Hệ Thống Hoạt Động</h2>
+        <p>Pipeline end-to-end từ ảnh đến ngôn ngữ tự nhiên</p>
+      </div>
+
+      <div class="pipeline">
+        <div class="pipe-step" data-aos="fade-up">
+          <div class="pipe-num">01</div>
+          <div class="pipe-icon">🖼️</div>
+          <h4>Nhập Ảnh</h4>
+          <p>Người dùng tải ảnh lên hệ thống qua giao diện web thân thiện. Hỗ trợ JPG, PNG, WEBP.</p>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step" data-aos="fade-up" style="animation-delay:.1s">
+          <div class="pipe-num">02</div>
+          <div class="pipe-icon">🔍</div>
+          <h4>Trích Xuất Feature</h4>
+          <p>InceptionV3 (pretrained ImageNet) trích xuất vector đặc trưng 2048 chiều từ ảnh.</p>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step" data-aos="fade-up" style="animation-delay:.2s">
+          <div class="pipe-num">03</div>
+          <div class="pipe-icon">🧠</div>
+          <h4>LSTM + GloVe</h4>
+          <p>Mô hình LSTM kết hợp GloVe 200d decodes vector thành chuỗi từ tiếng Anh.</p>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step" data-aos="fade-up" style="animation-delay:.3s">
+          <div class="pipe-num">04</div>
+          <div class="pipe-icon">🔦</div>
+          <h4>Beam Search</h4>
+          <p>Thuật toán Beam Search tìm kiếm các chuỗi có xác suất cao nhất để tạo ra captions đa dạng.</p>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step" data-aos="fade-up" style="animation-delay:.4s">
+          <div class="pipe-num">05</div>
+          <div class="pipe-icon">💬</div>
+          <h4>5 Captions</h4>
+          <p>Hệ thống trả về 5 câu mô tả đa dạng, phong phú về nội dung ngữ cảnh ảnh.</p>
+        </div>
+      </div>
+
+      <!-- Architecture Detail -->
+      <div class="arch-card">
+        <div class="arch-left">
+          <h3>Kiến Trúc Model</h3>
+          <ul class="arch-list">
+            <li>
+              <span class="arch-badge blue">Encoder</span>
+              <strong>InceptionV3</strong> – CNN pre-trained trên ImageNet 1.4M ảnh
+            </li>
+            <li>
+              <span class="arch-badge purple">Embedding</span>
+              <strong>GloVe 200d</strong> – Word vectors từ 6 tỷ tokens
+            </li>
+            <li>
+              <span class="arch-badge pink">Decoder</span>
+              <strong>LSTM 256 units</strong> – Mạng hồi quy sinh từng từ
+            </li>
+            <li>
+              <span class="arch-badge green">Decode</span>
+              <strong>Beam Search k=3,5</strong> – Tìm chuỗi tối ưu
+            </li>
+            <li>
+              <span class="arch-badge orange">Metric</span>
+              <strong>BLEU-1: 0.45</strong> – Đánh giá trên Flickr8k test set
+            </li>
+          </ul>
+        </div>
+        <div class="arch-right">
+          <div class="model-diagram">
+            <div class="diagram-node img-node">📸<br/><small>Image</small></div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-node cnn-node">🔍<br/><small>InceptionV3</small></div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-node feat-node">📊<br/><small>2048-d</small></div>
+            <div class="diagram-arrow" style="display:block;text-align:center">↓ ⊕</div>
+            <div class="diagram-node glove-node">📖<br/><small>GloVe</small></div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-node lstm-node">🧠<br/><small>LSTM</small></div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-node text-node">💬<br/><small>Caption</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ FEATURES ═══════════════════ -->
+  <section class="features-section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">⭐ Tính Năng</span>
+        <h2>Tại Sao Chọn VisioCaption AI?</h2>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card card-glow-purple">
+          <div class="feature-icon">⚡</div>
+          <h4>Tốc Độ Cao</h4>
+          <p>Xử lý và sinh caption trong vài giây nhờ GPU acceleration và mô hình được tối ưu hóa.</p>
+        </div>
+        <div class="feature-card card-glow-blue">
+          <div class="feature-icon">🎯</div>
+          <h4>Chính Xác</h4>
+          <p>Huấn luyện trên 40,000+ cặp ảnh-caption từ Flickr8k, đạt BLEU-1 score 0.45.</p>
+        </div>
+        <div class="feature-card card-glow-pink">
+          <div class="feature-icon">🌐</div>
+          <h4>Đa Dạng Caption</h4>
+          <p>Sinh ra 5 câu mô tả với góc nhìn và cách diễn đạt khác nhau nhờ Beam Search.</p>
+        </div>
+        <div class="feature-card card-glow-green">
+          <div class="feature-icon">🔒</div>
+          <h4>Bảo Mật</h4>
+          <p>Ảnh được xử lý tại chỗ, không lưu trữ trên server. Đảm bảo quyền riêng tư của bạn.</p>
+        </div>
+        <div class="feature-card card-glow-orange">
+          <div class="feature-icon">📱</div>
+          <h4>Responsive</h4>
+          <p>Giao diện đẹp, hoạt động mượt mà trên mọi thiết bị từ desktop đến mobile.</p>
+        </div>
+        <div class="feature-card card-glow-cyan">
+          <div class="feature-icon">🔄</div>
+          <h4>Sao Chép Dễ Dàng</h4>
+          <p>Copy từng caption hoặc tất cả một lần với một click chuột.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ GUIDE SECTION ═══════════════════ -->
+  <section class="guide-section" id="guide">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">📖 Hướng Dẫn</span>
+        <h2>Cách Sử Dụng Hệ Thống</h2>
+      </div>
+
+      <div class="guide-tabs">
+        <button class="guide-tab active" onclick="switchGuide('img2cap')">🖼️→💬 Ảnh sang Caption</button>
+        <button class="guide-tab" onclick="switchGuide('cap2img')">💬→🖼️ Caption sang Ảnh</button>
+      </div>
+
+      <div class="guide-content active" id="guide-img2cap">
+        <div class="guide-steps">
+          <div class="guide-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Chọn hoặc Kéo Ảnh</h4>
+              <p>Nhấn vào vùng tải ảnh hoặc kéo thả tệp ảnh từ máy tính. Hỗ trợ JPG, PNG, WEBP tối đa 10MB.</p>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Xem Trước Ảnh</h4>
+              <p>Ảnh sẽ hiển thị ngay lập tức. Nếu muốn đổi, nhấn nút "Đổi ảnh".</p>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Nhấn "Sinh Caption"</h4>
+              <p>AI sẽ phân tích ảnh trong vài giây và tạo ra 5 câu mô tả bằng tiếng Anh.</p>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>Sao Chép Kết Quả</h4>
+              <p>Nhấn icon 📋 bên cạnh từng caption để copy, hoặc "Sao chép tất cả" để copy cùng lúc.</p>
+            </div>
+          </div>
+        </div>
+        <div class="guide-tips">
+          <h4>💡 Mẹo để có kết quả tốt nhất</h4>
+          <ul>
+            <li>✅ Sử dụng ảnh rõ nét, ánh sáng tốt</li>
+            <li>✅ Ảnh có chủ thể rõ ràng (người, vật, cảnh vật)</li>
+            <li>✅ Tránh ảnh quá tối hoặc bị mờ</li>
+            <li>✅ Model được huấn luyện trên ảnh ngoài trời và chân dung</li>
+            <li>⚠️ Captions bằng tiếng Anh (theo dataset Flickr8k)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="guide-content" id="guide-cap2img" style="display:none">
+        <div class="comingsoon-guide">
+          <div class="comingsoon-icon">🚧</div>
+          <h3>Tính năng đang được phát triển</h3>
+          <p>Chức năng sinh ảnh từ văn bản sẽ được tích hợp trong phiên bản tiếp theo.<br/>
+             Vui lòng theo dõi cập nhật từ hệ thống.</p>
+          <div class="notify-form">
+            <input type="email" placeholder="Email của bạn" class="notify-input"/>
+            <button class="notify-btn">Nhận Thông Báo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ INFO SECTION ═══════════════════ -->
+  <section class="info-section">
+    <div class="container">
+      <div class="info-grid">
+        <div class="info-card">
+          <h3>📊 Dataset</h3>
+          <p>Flickr8k</p>
+          <span>40,455 cặp ảnh-caption</span>
+        </div>
+        <div class="info-card">
+          <h3>🧠 Model</h3>
+          <p>InceptionV3 + LSTM</p>
+          <span>Embedding GloVe 200 chiều</span>
+        </div>
+        <div class="info-card">
+          <h3>📈 Hiệu Suất</h3>
+          <p>BLEU-1: 0.450</p>
+          <span>BLEU-2: 0.303 | BLEU-4: 0.124</span>
+        </div>
+        <div class="info-card">
+          <h3>⚙️ Framework</h3>
+          <p>TensorFlow 2.x</p>
+          <span>Flask API + Vanilla JS</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ FOOTER ═══════════════════ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <span class="logo-icon">🤖</span>
+          <span class="logo-text">VisioCaption<span class="logo-accent">AI</span></span>
+          <p>Hệ thống sinh caption thông minh<br/>bằng Deep Learning</p>
+        </div>
+        <div class="footer-links">
+          <h5>Chức Năng</h5>
+          <a href="#demo">Ảnh → Caption</a>
+          <a href="#demo">Caption → Ảnh</a>
+          <a href="#how-it-works">Kiến Trúc</a>
+        </div>
+        <div class="footer-links">
+          <h5>Thông Tin</h5>
+          <a href="#features">Tính Năng</a>
+          <a href="#guide">Hướng Dẫn</a>
+          <a href="#info">Dataset</a>
+        </div>
+        <div class="footer-info">
+          <h5>Tech Stack</h5>
+          <span class="tech-tag">TensorFlow</span>
+          <span class="tech-tag">InceptionV3</span>
+          <span class="tech-tag">LSTM</span>
+          <span class="tech-tag">GloVe</span>
+          <span class="tech-tag">Flask</span>
+          <span class="tech-tag">Flickr8k</span>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2024 VisioCaption AI · Được xây dựng với ❤️ và TensorFlow</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════ TOAST NOTIFICATION ═══════════════════ -->
+  <div class="toast" id="toast"></div>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
