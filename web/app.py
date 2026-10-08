@@ -20,16 +20,16 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 app = Flask(__name__)
 CORS(app)
 
-# ─── Đường dẫn đến model ────────────────────────────────────────────────────
+# Đường dẫn model
 BASE_DIR     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH   = os.path.join(BASE_DIR, "caption_model_v2.keras")
+MODEL_PATH   = os.path.join(BASE_DIR, "caption_model_v3.keras")
 VOCAB_PATH   = os.path.join(BASE_DIR, "vocab_v2.pkl")
 
-# ─── Hằng số của model ───────────────────────────────────────────────────────
+# Hằng số model
 START, END, PAD, UNK = "startseq", "endseq", "<pad>", "<unk>"
 
-# ─── Load model một lần khi khởi động ───────────────────────────────────────
-print("🔄 Đang load model...")
+# Load model
+print("Đang load model...")
 
 # Load vocab
 with open(VOCAB_PATH, "rb") as f:
@@ -37,7 +37,6 @@ with open(VOCAB_PATH, "rb") as f:
 
 w2i        = vocab_data["w2i"]
 i2w        = vocab_data["i2w"]
-max_length = vocab_data["max_length"]
 vocab_size = len(w2i)
 PAD_ID     = w2i[PAD]
 UNK_ID     = w2i[UNK]
@@ -45,54 +44,78 @@ START_ID   = w2i[START]
 END_ID     = w2i[END]
 
 # Load caption model
-caption_model = load_model(MODEL_PATH)
+def masked_ce(y_true, y_pred):
+    y_true = tf.cast(y_true, tf.int32)
+    ce = tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred)       # (B, T)
+    mask = tf.cast(tf.not_equal(y_true, PAD_ID), ce.dtype)
+    return tf.reduce_sum(ce * mask) / tf.maximum(tf.reduce_sum(mask), 1.0)
+
+
+caption_model = load_model(MODEL_PATH, custom_objects={"masked_ce": masked_ce})
+
+# Tự động đồng bộ max_length với input shape của model
+if hasattr(caption_model.inputs[1], 'shape') and caption_model.inputs[1].shape[1] is not None:
+    max_length = int(caption_model.inputs[1].shape[1])
+else:
+    max_length = vocab_data["max_length"]
 
 # Load InceptionV3 feature extractor
 feature_extractor = tf.keras.applications.InceptionV3(
     weights="imagenet", include_top=False, pooling="avg"
 )
 
-print("✅ Model đã load thành công!")
+print("    Model đã load thành công!")
 print(f"   Vocab size: {vocab_size}, Max length: {max_length}")
 
 
-# ─── Hàm tiền xử lý ảnh ─────────────────────────────────────────────────────
+# Ham tien xu ly anh
 def preprocess_image(image_bytes):
-    """Chuyển bytes ảnh sang tensor chuẩn hóa cho InceptionV3"""
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     img = img.resize((299, 299))
     arr = np.array(img, dtype="float32")
     arr = arr / 127.5 - 1.0  # Chuẩn hóa [-1, 1]
     return np.expand_dims(arr, axis=0)
 
-
+# Trich xuat dac trung cua anh
 def extract_features(image_bytes):
-    """Trích xuất vector đặc trưng 2048 chiều từ ảnh"""
     tensor = preprocess_image(image_bytes)
     feat   = feature_extractor.predict(tensor, verbose=0)
     return feat[0]  # shape (2048,)
 
 
-# ─── Beam Search sinh caption ────────────────────────────────────────────────
-def generate_caption(feat, beam=3):
-    """Sinh 1 caption tốt nhất bằng Beam Search"""
+# Hàm kiểm tra lặp n-gram
+def _repeats_ngram(seq, nxt, n=3):
+    if len(seq) < n - 1:
+        return False
+    gram = tuple(seq[-(n - 1):]) + (nxt,)
+    return any(tuple(seq[i:i + n]) == gram for i in range(len(seq) - n + 1))
+
+
+# Beam search cải tiến (v3): dùng xác suất ở bước cuối thực sự, tránh lặp n-gram
+def generate_caption(feat, beam=3, alpha=0.7, no_repeat=3):
     feat   = np.asarray(feat, dtype="float32").reshape(1, -1)
     beams  = [([START_ID], 0.0)]
     finished = []
 
-    for _ in range(max_length - 1):
+    for _ in range(max_length):
         seqs  = [s for s, _ in beams]
         X     = pad_sequences(seqs, maxlen=max_length, padding="post", value=PAD_ID)
-        probs = np.array(
+        out   = np.array(
             caption_model({"image_feat": np.repeat(feat, len(seqs), axis=0), "seq": X},
                           training=False)
         )
+        # Lấy xác suất tại bước cuối thực sự của mỗi beam
+        probs = np.stack([out[b, len(s) - 1] for b, s in enumerate(seqs)])
         probs[:, [PAD_ID, UNK_ID, START_ID]] = 0.0
 
         cand = []
         for (seq, score), p in zip(beams, probs):
-            for idx in np.argsort(p)[-beam:]:
+            for idx in np.argsort(p)[-(beam * 2):][::-1]:
+                if p[idx] <= 0 or _repeats_ngram(seq, int(idx), no_repeat):
+                    continue
                 cand.append((seq + [int(idx)], score + float(np.log(p[idx] + 1e-12))))
+        if not cand:
+            break
         cand.sort(key=lambda c: c[1], reverse=True)
 
         beams = []
@@ -101,9 +124,8 @@ def generate_caption(feat, beam=3):
         if not beams or len(finished) >= beam:
             break
 
-    if not finished:
-        finished = beams
-    best = max(finished, key=lambda c: c[1] / len(c[0]))[0]
+    finished = finished or beams
+    best = max(finished, key=lambda c: c[1] / (len(c[0]) ** alpha))[0]
     return " ".join(i2w[i] for i in best[1:] if i != END_ID)
 
 
@@ -139,7 +161,7 @@ def generate_diverse_captions(feat, n=5):
     return results[:n]
 
 
-# ─── Routes ─────────────────────────────────────────────────────────────────
+# Route
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -183,16 +205,15 @@ def generate_captions():
         })
 
     except Exception as e:
-        print(f"❌ Lỗi: {e}")
+        print(f"Lỗi: {e}")
         return jsonify({"error": str(e)}), 500
 
-
+# Kiem tra trang thai server
 @app.route("/api/health", methods=["GET"])
 def health_check():
-    """Kiểm tra trạng thái server"""
     return jsonify({
         "status": "running",
-        "model": "caption_model_v2.keras",
+        "model": "caption_model_v3.keras",
         "vocab_size": vocab_size,
         "max_length": max_length
     })

@@ -3,6 +3,26 @@
    Xử lý UI: tab switching, file upload, API call, etc.
 ═══════════════════════════════════════════════════════ */
 
+// ─── Eye Care Mode ───────────────────────────────────────────
+(function initEyeCare() {
+  if (localStorage.getItem('eyeCare') === '1') {
+    document.body.classList.add('eye-care');
+  }
+})();
+
+function toggleEyeCare() {
+  const on = document.body.classList.toggle('eye-care');
+  localStorage.setItem('eyeCare', on ? '1' : '0');
+}
+
+// ─── Hamburger Menu ───────────────────────────────────────────
+function toggleMenu() {
+  const links = document.getElementById('navLinks');
+  const btn = document.getElementById('hamburger');
+  links.classList.toggle('open');
+  btn.classList.toggle('active');
+}
+
 // ─── Particle Background ─────────────────────────────────────
 (function initParticles() {
   const container = document.getElementById("particles");
@@ -172,7 +192,7 @@ function setLoadingState(loading) {
     document.getElementById("copyAllBtn").style.display = "none";
   } else {
     generateBtn.disabled = false;
-    generateBtnText.textContent = "✨ Sinh Caption";
+    generateBtnText.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> Sinh Caption`;
     spinner.style.display = "none";
     loadingState.style.display = "none";
   }
@@ -188,7 +208,7 @@ function displayCaptions(captions) {
   captions.forEach((caption, idx) => {
     const item = document.createElement("div");
     item.className = "caption-item";
-    item.style.animationDelay = `${idx * 0.1}s`;
+    item.style.animationDelay = `${idx * 0.06}s`;
     item.innerHTML = `
       <div class="caption-num">${idx + 1}</div>
       <div class="caption-text">${escapeHtml(caption)}</div>
